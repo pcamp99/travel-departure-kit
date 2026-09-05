@@ -214,9 +214,11 @@ def main(argv=None):
             print(f"Could not reach OpenStreetMap ({exc}).\n"
                   "Pass --fuel with an address you know instead.", file=sys.stderr)
             return 3
+        unmatched = set()
         best, fallback = pick(found, origin_latlon, airport.return_latlon,
                               departure.replace(tzinfo=None),
-                              avoid=airport.avoid_fuel)
+                              avoid=airport.avoid_fuel,
+                              unmatched_avoid=unmatched)
         if not best:
             print(f"No suitable stop among {len(found)} stations on that route. "
                   "Use --fuel, or review the airport's avoid_fuel list.",
@@ -261,6 +263,10 @@ def main(argv=None):
         where = st.street or f"no street address in OSM, at {st.lat:.5f},{st.lon:.5f}"
         print(f"\nFuel stop: {st.label} ({where})")
         print(f"  {chosen_fuel.why}")
+        if unmatched:
+            print(f"  Note: {airport.code} avoid_fuel entries that matched nothing "
+                  f"in this corridor: {', '.join(sorted(unmatched))}. Either the "
+                  "station is out of range today, or the entry is wrong.")
         if chosen_fallback:
             fb = chosen_fallback.station
             fb_where = fb.street or f"{fb.lat:.5f},{fb.lon:.5f}"

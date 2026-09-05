@@ -127,6 +127,62 @@ def detour_km(origin, station, dest) -> float:
     return max(0.0, (via - direct) * ROAD_FACTOR)
 
 
+# Street name normalisation for the avoid list.
+#
+# This exists because the avoid list silently did nothing. airports.yaml
+# carried "E Buckeye Rd"; OSM spells the same street "1515 East Buckeye Road".
+# A plain lowercase substring test never matched, so the guard looked present
+# and was inert. Live Phoenix data had 213 stations and the avoid list excluded
+# none of them, while the fixture tests passed because they compared strings
+# that already matched.
+#
+# It matters more than one wrong pick, because the avoid list is the
+# contribution model. Anyone adding a line will abbreviate the way people
+# abbreviate addresses, and a guard that fails quietly is worse than no guard.
+_STREET_WORDS = {
+    "road": "rd", "street": "st", "avenue": "ave", "av": "ave",
+    "boulevard": "blvd", "drive": "dr", "lane": "ln", "parkway": "pkwy",
+    "highway": "hwy", "court": "ct", "place": "pl", "terrace": "ter",
+    "circle": "cir", "square": "sq", "trail": "trl", "expressway": "expy",
+    "north": "n", "south": "s", "east": "e", "west": "w",
+    "northeast": "ne", "northwest": "nw", "southeast": "se", "southwest": "sw",
+}
+
+_PUNCT_RE = re.compile(r"[^\w\s]")
+
+
+def normalise_address(text: str) -> list[str]:
+    """Canonical tokens for address comparison.
+
+    Collapses the two ways every US address gets written, so "E Buckeye Rd"
+    and "East Buckeye Road" become the same sequence of tokens.
+    """
+    text = _PUNCT_RE.sub(" ", (text or "").lower())
+    return [_STREET_WORDS.get(t, t) for t in text.split()]
+
+
+def matches_avoid(station: "Station", entry: str) -> bool:
+    """Does this avoid entry refer to this station?
+
+    An OSM id is matched literally. Anything else is matched as a run of
+    consecutive address tokens, so "E Main St" does not match a station on
+    "W Main St" merely because both contain the words separately.
+    """
+    entry = (entry or "").strip()
+    if not entry:
+        return False
+    if "/" in entry:  # an OSM id such as node/1001
+        return entry.lower() in station.osm_id.lower()
+
+    needle = normalise_address(entry)
+    hay = normalise_address(f"{station.label} {station.street}")
+    if not needle or len(needle) > len(hay):
+        return False
+    return any(
+        hay[i:i + len(needle)] == needle for i in range(len(hay) - len(needle) + 1)
+    )
+
+
 _TIME_RE = re.compile(r"(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})")
 _DAYS = ["mo", "tu", "we", "th", "fr", "sa", "su"]
 
@@ -263,19 +319,24 @@ def rank(
     min_km_from_return: float = 1.0,
     max_km_from_return: float = 25.0,
     avoid: list[str] | None = None,
+    unmatched_avoid: set | None = None,
 ) -> list[Candidate]:
-    """Score and sort. Highest score first."""
-    avoid_lower = [a.lower() for a in (avoid or [])]
+    """Score and sort. Highest score first.
+
+    Pass a set as unmatched_avoid and it is filled with any avoid entries that
+    matched nothing, so a caller can say so out loud instead of letting a dead
+    guard pass for a live one.
+    """
+    avoid = list(avoid or [])
+    if unmatched_avoid is not None:
+        unmatched_avoid.update(avoid)
     out: list[Candidate] = []
 
     for st in dedupe([s for s in stations if s.sells_petrol]):
-        blocked = next(
-            (a for a in avoid_lower
-             if a in st.osm_id.lower()
-             or (a in f"{st.label} {st.street}".lower())),
-            None,
-        )
+        blocked = next((a for a in avoid if matches_avoid(st, a)), None)
         if blocked:
+            if unmatched_avoid is not None:
+                unmatched_avoid.discard(blocked)
             continue
 
         d_km = detour_km(origin, (st.lat, st.lon), dest)

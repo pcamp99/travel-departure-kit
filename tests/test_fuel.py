@@ -207,3 +207,67 @@ def test_an_unnamed_station_ranks_below_a_named_one_all_else_equal():
     anon = Station("n/2", "", 32.748480, -117.193230)
     ranked = rank([named, anon], HOTEL, RETURN, FIVE_AM)
     assert ranked[0].station.label == "Shell"
+
+
+# --- the avoid list was inert against live data ------------------------------
+# Found by running the real Phoenix corridor: 213 stations returned, and the
+# avoid list excluded exactly none of them. These tests use the strings OSM
+# actually returns, not strings chosen to match.
+
+def test_an_abbreviated_entry_matches_a_spelled_out_osm_street():
+    from departure_kit.fuel import Station, matches_avoid
+    shell = Station("node/1", "Shell", 33.44, -112.05,
+                    tags={"addr:housenumber": "1515",
+                          "addr:street": "East Buckeye Road"})
+    # airports.yaml says "E Buckeye Rd". OSM says "East Buckeye Road".
+    assert matches_avoid(shell, "E Buckeye Rd")
+    assert matches_avoid(shell, "East Buckeye Road")
+    assert matches_avoid(shell, "Buckeye")
+
+
+def test_a_different_street_with_the_same_name_is_not_matched():
+    from departure_kit.fuel import Station, matches_avoid
+    shell = Station("node/1", "Shell", 33.44, -112.05,
+                    tags={"addr:street": "East Buckeye Road"})
+    assert not matches_avoid(shell, "W Buckeye Rd")
+    assert not matches_avoid(shell, "Buckeye Ln")
+
+
+def test_tokens_must_be_consecutive_not_merely_present():
+    # "E Main St" must not match a station on "W Main St" that happens to sit
+    # in an "East Plaza", which a loose subset test would allow.
+    from departure_kit.fuel import Station, matches_avoid
+    st = Station("node/1", "Shell", 33.44, -112.05,
+                 tags={"addr:street": "West Main Street East Plaza"})
+    assert not matches_avoid(st, "E Main St")
+    assert matches_avoid(st, "W Main St")
+
+
+def test_an_osm_id_entry_still_matches_literally():
+    from departure_kit.fuel import Station, matches_avoid
+    st = Station("node/1001", "Shell", 33.44, -112.05)
+    assert matches_avoid(st, "node/1001")
+    assert not matches_avoid(st, "node/9999")
+
+
+def test_an_avoid_entry_that_matches_nothing_is_reported():
+    # The real damage was silence. A guard that fires on nothing should say so
+    # rather than pass for a working one.
+    from departure_kit.fuel import Station
+    st = Station("node/1", "ARCO", 32.748473, -117.193225, brand="ARCO",
+                 tags={"addr:street": "Old Town Ave"})
+    unmatched = set()
+    rank([st], HOTEL, RETURN, FIVE_AM,
+         avoid=["Old Town Ave", "Nowhere Blvd"], unmatched_avoid=unmatched)
+    assert unmatched == {"Nowhere Blvd"}
+
+
+def test_the_abbreviated_entry_actually_removes_the_station_from_ranking():
+    # End to end through rank(), which is where the inert guard hid.
+    from departure_kit.fuel import Station
+    shell = Station("node/1", "Shell", 32.748117, -117.192902, brand="Shell",
+                    tags={"addr:street": "East Moore Street"})
+    arco = Station("node/2", "ARCO", 32.748473, -117.193225, brand="ARCO",
+                   tags={"addr:street": "Old Town Ave"})
+    with_guard = rank([shell, arco], HOTEL, RETURN, FIVE_AM, avoid=["E Moore St"])
+    assert [c.station.brand for c in with_guard] == ["ARCO"]
