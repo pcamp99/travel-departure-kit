@@ -197,3 +197,22 @@ def test_an_unknown_origin_is_named_so_it_can_be_added():
     assert unconfigured_departure(ev, CODES) == "BOS"
     known = event("AA 1651", "San Diego (SAN) - Charlotte (CLT)")
     assert unconfigured_departure(known, CODES) is None
+
+
+def test_an_ordinary_event_with_a_three_letter_token_is_not_reported_as_a_flight():
+    # A real run announced "Flight from SFP found" because the reporting path
+    # checked for an airport code without first checking the event was a
+    # flight at all. find_flights had that guard; the reporter did not.
+    from departure_kit.watch import unconfigured_departure
+    ordinary = event("SFP review", "Conference room")
+    assert not looks_like_a_flight(ordinary)
+    # The code alone still resolves, which is why the flight check has to come
+    # first rather than being implied by this function.
+    assert unconfigured_departure(ordinary, CODES) == "SFP"
+
+
+def test_a_genuine_flight_from_an_unconfigured_airport_is_still_reported():
+    from departure_kit.watch import unconfigured_departure
+    real = event("AA 100", "Boston (BOS) - Charlotte (CLT)")
+    assert looks_like_a_flight(real)
+    assert unconfigured_departure(real, CODES) == "BOS"

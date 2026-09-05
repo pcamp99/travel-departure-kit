@@ -21,8 +21,8 @@ from datetime import datetime, timedelta, timezone
 
 from departure_kit.profile import ConfigError, load_airports, load_profile
 from departure_kit.watch import (
-    already_planned, find_flights, find_lodging, next_actionable, plan_marker,
-    unconfigured_departure,
+    already_planned, find_flights, find_lodging, looks_like_a_flight,
+    next_actionable, plan_marker, unconfigured_departure,
 )
 
 
@@ -64,7 +64,15 @@ def main(argv=None):
 
     # Say something useful about flights we found but cannot plan for, rather
     # than staying silent about an event the user can see themselves.
+    #
+    # The looks_like_a_flight guard is not optional here. Without it any
+    # calendar entry containing a bare three letter uppercase token gets
+    # reported as a flight from a missing airport, which is how a real run
+    # announced "Flight from SFP found". find_flights had this guard from the
+    # start; this path was written later and did not.
     for event in events:
+        if not looks_like_a_flight(event, flight_patterns):
+            continue
         missing = unconfigured_departure(event, set(airports))
         if missing and (event.get("start") or {}).get("dateTime"):
             print(f"Flight from {missing} found, but there is no profile for that "
