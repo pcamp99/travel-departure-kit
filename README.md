@@ -3,24 +3,50 @@
 Two small tools for people who fly a lot for work, rent a car at the other
 end, and have to give it back at six in the morning.
 
-**`plan_departure.py`** picks the one fuel stop to make between your hotel and
-the rental return, works backward from your flight to a time to leave, and
-gives you tappable navigation links for the whole route.
+It answers the question you are actually asking at 4 am: where do I stop for
+fuel, and when do I have to leave?
 
-**`fix_timezones.py`** finds calendar appointments that are stamped with the
-wrong time zone, which is a quieter and more expensive problem than it sounds.
+```
+$ python plan_departure.py --airport SAN --depart 2026-10-17T07:00 \
+    --from "1515 Hotel Cir S, San Diego, CA 92108" \
+    --from-latlon 32.758335,-117.176866 --drive auto --find-fuel
 
-Neither needs a paid API and neither needs a credit card. The fuel finder uses
-OpenStreetMap, which serves this data with no key and no account.
+Departure plan, all times San Diego International local (PDT)
 
-**On prior art, honestly.** Several apps already tell you when to leave for a
-flight, and some do it better than this: WhenToLeave and DepartTime both pull
-live traffic and live TSA wait times, which this cannot. DepartTime even models
-offsite rental depots and shuttles. If all you want is a leave time, use one of
-those.
+  04:55  Leave hotel
+  04:59  Fuel stop
+  05:17  Arrive SAN rental return
+         3355 Admiral Boland Way, San Diego, CA 92101
+  05:27  Keys handed over
+  05:27  Board the shuttle to the terminal
+         8 minute ride, up to 15 minutes waiting
+  05:50  At the terminal
+  05:55  Through security
+  06:00  Airside, buffer starts
+  07:00  Scheduled departure
 
-What they do not do is pick the station. That is the gap this fills, and it is
-the part that actually costs a business traveller something.
+Binding constraint: the 23 minute shuttle transfer at SAN, not security.
+
+Fuel stop: ARCO, 3860 Old Town Ave
+  on the way, confirmed open at that hour, large brand, quick in and
+  out, 2 km from the return
+```
+
+The same person, same flight time, out of Charlotte instead: leave at 05:20,
+not 04:55. Same traveller, same habits, different airport. That gap is the
+rental car return, and no rule of thumb accounts for it.
+
+**Two things it does that nothing else does.** It picks the actual station,
+by name, on your route, open at that hour. And it carries per airport
+knowledge of what the rental return really costs you, because at Phoenix,
+San Diego, Houston and plenty of others the return is miles from the terminal
+and you have to ride something to get back.
+
+**`fix_timezones.py`** is the second tool. It finds calendar appointments
+stamped with the wrong time zone, which is a quieter and more expensive
+problem than it sounds.
+
+No paid API, no account, no credit card. It runs on OpenStreetMap.
 
 ---
 
@@ -81,6 +107,19 @@ then permanently wrong. It does not fix itself when you travel: your phone
 shows a different number, but the underlying moment never moves. A noon
 appointment typed in Charlotte for a Phoenix office is 9 am Phoenix, forever,
 and you find out in the parking lot.
+
+---
+
+## Prior art
+
+**On prior art, honestly.** Several apps already tell you when to leave for a
+flight, and some do it better than this: WhenToLeave and DepartTime both pull
+live traffic and live TSA wait times, which this cannot. DepartTime even models
+offsite rental depots and shuttles. If all you want is a leave time, use one of
+those.
+
+What they do not do is pick the station. That is the gap this fills, and it is
+the part that actually costs a business traveller something.
 
 ---
 
