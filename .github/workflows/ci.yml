@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    # Windows is not optional here. The tz database is present on the Ubuntu
+    # runners and absent on Windows, which is exactly the split that let the
+    # missing tzdata dependency ship unnoticed.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.12"]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Smoke test the config loader
+        # Catches a profile.example.yaml that no longer parses, which the unit
+        # tests would miss because they build profiles in memory.
+        run: |
+          cp config/profile.example.yaml config/profile.yaml
+          python -c "from departure_kit.profile import load_profile; load_profile(); print('profile loads')"
+        shell: bash

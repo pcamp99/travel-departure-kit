@@ -1,0 +1,14 @@
+PyYAML>=6.0
+
+# The IANA time zone database. CPython's zoneinfo reads the system database and
+# does not bundle one; Windows ships no such database and minimal Linux images
+# often omit it. Without this every zone name fails, which reads as a bad config
+# value rather than a missing dependency. Harmless where a system database
+# already exists — zoneinfo prefers the system copy.
+tzdata>=2024.1
+
+# Only needed for fix_timezones.py and --add-to-calendar.
+# plan_departure.py works without these.
+google-api-python-client>=2.100
+google-auth-httplib2>=0.1.1
+google-auth-oauthlib>=1.1

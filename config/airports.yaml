@@ -1,0 +1,124 @@
+# Airport rental car return profiles.
+#
+# This is the file that makes the whole kit work. Most departure calculators
+# assume the rental return is at the terminal. At a lot of airports it is not,
+# and the transfer is where the time goes.
+#
+# Add your own airports as you hit them. A pull request with a new airport is
+# the single most useful thing you can contribute back.
+#
+# Fields per airport:
+#   timezone        IANA zone. Used for every calculation at this airport.
+#   return_type     terminal | shuttle | train
+#                     terminal - you park and walk. No transfer cost.
+#                     shuttle  - bus. Wait time is the risk.
+#                     train    - automated people mover.
+#   return_address  Where you actually drive to. Not the terminal address.
+#   return_latlon   For the navigation links.
+#   return_minutes  Handing over keys, paperwork, walking to the transfer.
+#   transfer_ride   Minutes in motion once aboard.
+#   transfer_wait   Worst case wait. Use the overnight figure, not the daytime one.
+#   notes           Anything that has bitten someone.
+#   avoid_fuel      Stations the fuel finder must never pick, as a list of
+#                   street names or OSM ids. This is the human knowledge
+#                   layer: no API knows that a station gouges or that its
+#                   forecourt fills with other renters at 5 am. If a stop
+#                   burned you, add it here and everyone benefits.
+
+CLT:
+  name: Charlotte Douglas
+  timezone: America/New_York
+  return_type: terminal
+  return_address: 5501 Josh Birmingham Pkwy, Charlotte, NC 28208
+  return_latlon: [35.2172, -80.9474]
+  return_minutes: 10
+  transfer_ride: 0
+  transfer_wait: 0
+  notes: Return garage is attached to the terminal. Walk, no transfer.
+
+PHX:
+  name: Phoenix Sky Harbor
+  timezone: America/Phoenix
+  return_type: train
+  return_address: 1805 E Sky Harbor Cir S, Phoenix, AZ 85034
+  return_latlon: [33.430364, -112.044979]
+  return_place_id: ChIJY2UJHR8OK4cRB3o-SshRN5s
+  return_minutes: 10
+  transfer_ride: 8
+  transfer_wait: 15
+  notes: >
+    Rental Car Center is about 4 miles off the terminals. PHX Sky Train runs
+    24 hours but drops to reduced frequency between 10 pm and 5 am for nightly
+    maintenance, when waits can reach 15 minutes or more. Arizona does not
+    observe daylight saving.
+  avoid_fuel:
+    # Last station before the return. Widely reported at close to double the
+    # area price, with over a thousand reviews saying so.
+    - E Buckeye Rd
+
+SAN:
+  name: San Diego International
+  timezone: America/Los_Angeles
+  return_type: shuttle
+  return_address: 3355 Admiral Boland Way, San Diego, CA 92101
+  return_latlon: [32.736180, -117.179286]
+  return_place_id: ChIJ4ZttTzGr3oARClLTsb4lxIQ
+  return_minutes: 10
+  transfer_ride: 8
+  transfer_wait: 15
+  notes: >
+    Consolidated Rental Car Center, shuttle runs 24 hours. Published frequency
+    ranges from every 5 minutes to every 20 depending on the source, so budget
+    the high end. SAN runs 30 to 40 departures between 6 and 7 am, so the
+    checkpoint is busier in that hour than the passenger count suggests.
+  avoid_fuel:
+    # Faces the Old Town Ave ARCO across the street and reviewers there
+    # consistently report a large gap on the same corner.
+    - Moore St
+
+IAH:
+  name: Houston George Bush Intercontinental
+  timezone: America/Chicago
+  return_type: shuttle
+  return_address: 17330 Palmetto Pines, Houston, TX 77032
+  return_latlon: [29.9736, -95.3436]
+  return_minutes: 10
+  transfer_ride: 12
+  transfer_wait: 15
+  notes: >
+    Consolidated facility well off the terminal loop. Signage on the approach
+    roads is poor and the turn is easy to miss, so treat the drive estimate as
+    optimistic if you have not done it before.
+
+FLL:
+  name: Fort Lauderdale Hollywood
+  timezone: America/New_York
+  return_type: shuttle
+  return_address: 2200 SW 45th St, Dania Beach, FL 33312
+  return_latlon: [26.0656, -80.1660]
+  return_minutes: 10
+  transfer_ride: 10
+  transfer_wait: 12
+  notes: Rental Car Center is off site. Shuttle to terminals.
+
+MSY:
+  name: New Orleans Louis Armstrong
+  timezone: America/Chicago
+  return_type: shuttle
+  return_address: 900 Rental Blvd, Kenner, LA 70062
+  return_latlon: [29.9860, -90.2540]
+  return_minutes: 10
+  transfer_ride: 10
+  transfer_wait: 12
+  notes: Consolidated Rental Facility, separate from the terminal.
+
+BWI:
+  name: Baltimore Washington International
+  timezone: America/New_York
+  return_type: shuttle
+  return_address: 7432 New Ridge Rd, Hanover, MD 21076
+  return_latlon: [39.1866, -76.6795]
+  return_minutes: 10
+  transfer_ride: 12
+  transfer_wait: 12
+  notes: Rental Car Facility is several miles off site. Shuttle only.

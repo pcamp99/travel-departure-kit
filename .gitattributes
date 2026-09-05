@@ -1,0 +1,5 @@
+# Normalize to LF in the repository. CI runs on both Ubuntu and Windows and the
+# checkout should be byte-identical on each.
+* text=auto eol=lf
+*.png binary
+*.jpg binary

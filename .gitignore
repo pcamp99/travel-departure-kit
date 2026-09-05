@@ -1,0 +1,13 @@
+# Anything personal lives here. Never commit these.
+config/profile.yaml
+credentials.json
+token.json
+*.token.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/

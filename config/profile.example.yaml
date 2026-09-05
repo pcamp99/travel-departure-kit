@@ -1,0 +1,63 @@
+# Copy this to config/profile.yaml and edit. profile.yaml is gitignored,
+# so your details never leave your machine.
+#
+# These are the numbers that make the plan yours. The defaults below are
+# deliberately unremarkable. If you have TSA PreCheck and CLEAR, your security
+# number is much smaller than someone who does not, and the whole plan shifts.
+
+home_timezone: America/New_York
+
+# How long you want to be airside before the aircraft door time, doing nothing
+# urgent. This is the number most people get wrong by treating it as slack to
+# be trimmed. It is not slack, it is the buffer that absorbs everything else.
+airside_buffer_minutes: 60
+
+# Getting through the checkpoint. Be honest rather than optimistic.
+#   no PreCheck, big airport, morning bank ... 30 to 45
+#   PreCheck ....................................... 10 to 15
+#   PreCheck plus CLEAR ............................  5
+security_minutes: 5
+
+# Walking from where the transfer drops you to the checkpoint.
+terminal_walk_minutes: 5
+
+# Pumping fuel, including getting off and back on the road. Higher than you
+# think, because you are on roads you do not know in the dark.
+fuel_stop_minutes: 8
+
+# Set true if you check a bag. Adds the airline bag drop cutoff as a hard wall
+# earlier than boarding, which for most US carriers is 45 minutes domestic.
+checks_bags: false
+bag_drop_cutoff_minutes: 45
+
+# Rounding. Departure times get rounded down to a multiple of this so you get
+# "leave at 4:50" rather than "leave at 4:53".
+round_to_minutes: 5
+
+# Time zone corrector settings.
+tz_fixer:
+  # Events created by these addresses are treated as "wall clock is correct,
+  # the zone stamp is wrong". This is the whole trick. If a specific person
+  # always types the appointment's local time, their events can be corrected
+  # automatically with no ambiguity.
+  #
+  # Leave this list empty and the corrector will only report, never rewrite.
+  trusted_local_time_creators: []
+  #   - assistant@example.com
+
+  # Never touch events whose title or description matches these. A video call
+  # with an office in another state really is in your zone, not theirs.
+  skip_if_matches:
+    - zoom
+    - teams
+    - google meet
+    - webex
+    - phone call
+    - dial in
+
+  # States that span more than one time zone. An address in one of these can
+  # not be resolved from the state alone, so the corrector reports it and
+  # refuses to guess. Add a city override below if you visit one often.
+  city_overrides: {}
+  #   "El Paso, TX": America/Denver
+  #   "Pensacola, FL": America/Chicago

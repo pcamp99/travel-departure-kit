@@ -1,0 +1,60 @@
+{
+  "_comment": "Overpass-shaped fixture for the DoubleTree Hotel Circle to SAN Rental Car Center corridor. Positions and brands reflect real stations on that route; this file exists so the ranking logic can be tested without hitting the live API.",
+  "elements": [
+    {
+      "type": "node", "id": 1001, "lat": 32.748473, "lon": -117.193225,
+      "tags": {
+        "amenity": "fuel", "name": "ARCO", "brand": "ARCO",
+        "opening_hours": "24/7",
+        "addr:housenumber": "3860", "addr:street": "Old Town Ave"
+      }
+    },
+    {
+      "type": "node", "id": 1002, "lat": 32.748117, "lon": -117.192902,
+      "tags": {
+        "amenity": "fuel", "name": "Shell", "brand": "Shell",
+        "opening_hours": "24/7",
+        "addr:housenumber": "2290", "addr:street": "Moore St"
+      }
+    },
+    {
+      "type": "node", "id": 1003, "lat": 32.763947, "lon": -117.155219,
+      "tags": {
+        "amenity": "fuel", "name": "Food Mart & Gas",
+        "opening_hours": "24/7",
+        "addr:housenumber": "915", "addr:street": "Camino del Rio S"
+      }
+    },
+    {
+      "type": "way", "id": 1004, "center": {"lat": 32.749287, "lon": -117.206072},
+      "tags": {
+        "amenity": "fuel", "name": "Chevron", "brand": "Chevron",
+        "opening_hours": "24/7",
+        "addr:housenumber": "2959", "addr:street": "Midway Dr"
+      }
+    },
+    {
+      "type": "node", "id": 1005, "lat": 32.754319, "lon": -117.204722,
+      "tags": {
+        "amenity": "fuel", "name": "Shell", "brand": "Shell",
+        "opening_hours": "Mo-Su 06:00-22:00",
+        "addr:housenumber": "3711", "addr:street": "Camino del Rio W"
+      }
+    },
+    {
+      "type": "node", "id": 1006, "lat": 32.737100, "lon": -117.181500,
+      "tags": {
+        "amenity": "fuel", "name": "Airport Fuel",
+        "addr:street": "Admiral Boland Way"
+      }
+    },
+    {
+      "type": "node", "id": 1007, "lat": 32.833939, "lon": -117.175311,
+      "tags": {
+        "amenity": "fuel", "name": "24 7 Gas and Food",
+        "opening_hours": "24/7",
+        "addr:housenumber": "5405", "addr:street": "Clairemont Mesa Blvd"
+      }
+    }
+  ]
+}
