@@ -68,6 +68,10 @@ def parse_args(argv):
                    help="Leave the origin out of the Maps link so it starts from "
                         "wherever your phone is when you open it. Useful for a link "
                         "generated hours ahead. Does not change the leave time.")
+    p.add_argument("--tag", default=None,
+                   help="Line appended to the created event's description. Used by "
+                        "watch_calendar.py to recognise its own work and not write "
+                        "the same plan twice.")
     p.add_argument("--add-to-calendar", action="store_true",
                    help="Create the reminder event (needs Google credentials)")
     return p.parse_args(argv)
@@ -302,6 +306,10 @@ def main(argv=None):
         from departure_kit.gcal import create_event, service
 
         body = plan.as_text() + "\n\n" + google_maps_route(link_origin, dest, stops)
+        if args.tag:
+            # Without this the watcher cannot tell its own plans apart from
+            # anything else and writes a fresh duplicate on every run.
+            body += f"\n\n{args.tag}"
         created = create_event(
             service(),
             summary=f"Leave for {airport.code} (fuel stop, then rental return)",

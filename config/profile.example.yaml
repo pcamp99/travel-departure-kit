@@ -61,3 +61,25 @@ tz_fixer:
   city_overrides: {}
   #   "El Paso, TX": America/Denver
   #   "Pensacola, FL": America/Chicago
+
+# Settings for watch_calendar.py, the script a scheduler runs to write your
+# departure plan automatically the day before a flight.
+watch:
+  # Flights leaving from here are skipped. On the way out you park your own
+  # car at your own airport, which is a different problem with different
+  # numbers. Leave blank to plan every flight.
+  home_airport: ""
+
+  # Extra text that means an event is a flight. The defaults already catch a
+  # flight number such as "AA 1651" and a parenthesised code such as "(SAN)",
+  # which covers most itineraries. Add your booking tool's wording if yours
+  # writes events some other way.
+  flight_event_matches: []
+  #   - egencia
+  #   - concur
+
+  # Extra text that means an event is where you are staying. The defaults
+  # cover "Stay at ...", the major chains, and the common words. Add anything
+  # your bookings use.
+  lodging_event_matches: []
+  #   - vrbo

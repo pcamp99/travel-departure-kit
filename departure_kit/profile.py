@@ -37,6 +37,7 @@ class Profile:
     bag_drop_cutoff_minutes: int = 45
     round_to_minutes: int = 5
     tz_fixer: dict = field(default_factory=dict)
+    watch: dict = field(default_factory=dict)
 
     def __post_init__(self):
         _require_zone(self.home_timezone, "profile.home_timezone")

@@ -46,6 +46,18 @@ and you have to ride something to get back.
 stamped with the wrong time zone, which is a quieter and more expensive
 problem than it sounds.
 
+**`watch_calendar.py`** is the one that makes it run by itself. It looks at
+your calendar for a departure in the next day, finds where you are staying,
+and writes the plan into your calendar as a reminder with the navigation links
+in it. Point your operating system's scheduler at it once and you stop
+thinking about any of this. See [SCHEDULING.md](SCHEDULING.md) for Windows
+Task Scheduler, launchd and cron; no extra software, and Home Assistant is a
+footnote rather than a requirement.
+
+Writing the plan the day before rather than at booking time is deliberate. A
+plan generated weeks ahead is computed from a calendar that will have changed
+by the morning it matters.
+
 No paid API, no account, no credit card. It runs on OpenStreetMap.
 
 ---
