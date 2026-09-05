@@ -223,8 +223,13 @@ def main(argv=None):
                   file=sys.stderr)
             return 3
         chosen_fuel, chosen_fallback = best, fallback
-        args.fuel = best.station.street or best.station.label
         args.fuel_latlon = (best.station.lat, best.station.lon)
+        # Use coordinates, not a name. Many OSM fuel nodes carry no address at
+        # all, and falling back to the brand produced "waypoints=Chevron",
+        # which sends Google Maps to whichever Chevron it feels like. A found
+        # station always has exact coordinates, so there is no reason to hand
+        # a search engine a guess.
+        args.fuel = f"{best.station.lat:.6f},{best.station.lon:.6f}"
 
         if auto_drive:
             from departure_kit.route import RoutingFailed, drive_minutes
@@ -253,11 +258,13 @@ def main(argv=None):
 
     if chosen_fuel:
         st = chosen_fuel.station
-        print(f"\nFuel stop: {st.label}, {st.street}")
+        where = st.street or f"no street address in OSM, at {st.lat:.5f},{st.lon:.5f}"
+        print(f"\nFuel stop: {st.label} ({where})")
         print(f"  {chosen_fuel.why}")
         if chosen_fallback:
             fb = chosen_fallback.station
-            print(f"  If it is dark or the pumps are down: {fb.label}, {fb.street}")
+            fb_where = fb.street or f"{fb.lat:.5f},{fb.lon:.5f}"
+            print(f"  If it is dark or the pumps are down: {fb.label} ({fb_where})")
         else:
             print("  No second option on a different brand within the corridor.")
 

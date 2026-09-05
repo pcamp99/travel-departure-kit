@@ -69,3 +69,13 @@ def test_waze_was_always_dynamic():
     for _, url in waze_legs(HOTEL, RETURN, [FUEL]):
         assert "origin" not in url
         assert "ll=" in url
+
+
+def test_a_bare_brand_name_is_never_an_acceptable_waypoint():
+    # Real OSM data from San Diego produced "waypoints=Chevron", which routes
+    # to whichever Chevron Google picks. A found station has coordinates, so
+    # the waypoint must carry those.
+    coords = Place("Fuel", "32.743133,-117.181903", 32.743133, -117.181903)
+    url = google_maps_route(HOTEL, RETURN, [coords])
+    assert "waypoints=32.743133%2C-117.181903" in url
+    assert "waypoints=Chevron" not in url

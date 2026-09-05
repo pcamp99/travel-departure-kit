@@ -123,7 +123,9 @@ def test_avoid_list_can_target_a_specific_osm_id():
 
 def test_reason_string_explains_the_pick():
     best, _ = pick(stations(), HOTEL, RETURN, FIVE_AM)
-    assert "off route" in best.why
+    # Inside the free window the reason reads "on the way" rather than a
+    # spurious minute count.
+    assert "on the way" in best.why or "off route" in best.why
     assert "from the return" in best.why
 
 
@@ -158,3 +160,50 @@ def test_the_minimum_distance_floor_does_not_evict_a_good_stop():
     ranked = rank(stations(), HOTEL, RETURN, FIVE_AM)
     assert ranked, "the floor should not empty the list"
     assert min(c.km_from_return for c in ranked) < 3.0
+
+
+# --- lessons from the first real run against live OSM data -------------------
+
+def test_a_propane_dealer_is_not_a_gas_station():
+    # Live San Diego data returned "Ez Pz Propane" under amenity=fuel.
+    from departure_kit.fuel import Station
+    assert not Station("n/1", "Ez Pz Propane", 32.74, -117.18).sells_petrol
+    assert Station("n/2", "ARCO", 32.74, -117.18, brand="ARCO").sells_petrol
+
+
+def test_an_lpg_only_site_is_excluded_by_its_tags():
+    from departure_kit.fuel import Station
+    lpg = Station("n/3", "Gas Depot", 32.74, -117.18, tags={"fuel:lpg": "yes"})
+    petrol = Station("n/4", "Gas Depot", 32.74, -117.18,
+                     tags={"fuel:lpg": "yes", "fuel:diesel": "yes"})
+    assert not lpg.sells_petrol
+    assert petrol.sells_petrol
+
+
+def test_the_same_forecourt_mapped_twice_is_collapsed():
+    # Live data returned two Chevrons 1.1 km from the SAN return with identical
+    # scores, which is one station offered as a choice between itself.
+    from departure_kit.fuel import Station, dedupe
+    a = Station("node/1", "Chevron", 32.743133, -117.181903, brand="Chevron")
+    b = Station("way/2", "Chevron", 32.743200, -117.181950, brand="Chevron")
+    far = Station("node/3", "Chevron", 32.760000, -117.200000, brand="Chevron")
+    assert len(dedupe([a, b, far])) == 2
+
+
+def test_a_small_detour_difference_does_not_decide_the_answer():
+    # The detour figure is a straight line estimate. Letting 0.1 minutes beat
+    # 2 minutes is false precision, and it is what made live data pick an
+    # untagged perimeter station over a large 24 hour brand.
+    from departure_kit.fuel import Station
+    near_anon = Station("n/1", "Chevron", 32.743133, -117.181903, brand="Chevron")
+    further_big = Station("n/2", "ARCO", 32.748473, -117.193225, brand="ARCO")
+    best, _ = pick([near_anon, further_big], HOTEL, RETURN, FIVE_AM)
+    assert best.station.brand == "ARCO"
+
+
+def test_an_unnamed_station_ranks_below_a_named_one_all_else_equal():
+    from departure_kit.fuel import Station
+    named = Station("n/1", "Shell", 32.748473, -117.193225, brand="Shell")
+    anon = Station("n/2", "", 32.748480, -117.193230)
+    ranked = rank([named, anon], HOTEL, RETURN, FIVE_AM)
+    assert ranked[0].station.label == "Shell"

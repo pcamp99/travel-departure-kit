@@ -36,6 +36,17 @@ ROAD_FACTOR = 1.3
 
 EARTH_RADIUS_KM = 6371.0
 
+# Detour below this is treated as free. The detour figure comes from a
+# straight line approximation with more error in it than a minute or two, so
+# ranking a two minute difference above a known brand is false precision
+# deciding the answer. Real San Diego data made this obvious: an untagged
+# station 0.1 minutes off route beat a large 24 hour brand 2 minutes off route,
+# and the difference between those two numbers is inside the noise.
+FREE_DETOUR_MINUTES = 3.0
+
+# amenity=fuel includes propane and LPG dealers you cannot put petrol in.
+NOT_A_PETROL_STATION = ("propane", "lpg", "cng", "hydrogen", "ez pz")
+
 # Brands that are reliably large, well lit and quick to get in and out of.
 # This is a speed heuristic, not an endorsement, and not about price.
 FAST_BRANDS = {
@@ -69,6 +80,22 @@ class Station:
     def is_fast_brand(self) -> bool:
         haystack = f"{self.brand} {self.name}".lower()
         return any(b in haystack for b in FAST_BRANDS)
+
+    @property
+    def is_anonymous(self) -> bool:
+        """No name and no brand. You cannot tell from the road what it is."""
+        return not (self.name.strip() or self.brand.strip())
+
+    @property
+    def sells_petrol(self) -> bool:
+        """Filter out propane and LPG dealers, which share amenity=fuel."""
+        haystack = f"{self.brand} {self.name}".lower()
+        if any(w in haystack for w in NOT_A_PETROL_STATION):
+            return False
+        fuels = {k for k in self.tags if k.startswith("fuel:")}
+        if fuels and not (fuels - {"fuel:lpg", "fuel:cng", "fuel:propane"}):
+            return False
+        return True
 
 
 @dataclass
@@ -205,6 +232,27 @@ def fetch_stations(origin, dest, pad_km: float = 3.0, url: str = OVERPASS_URL):
         return parse_overpass(json.loads(resp.read().decode()))
 
 
+def dedupe(stations: list[Station], metres: float = 120.0) -> list[Station]:
+    """Collapse stations mapped more than once.
+
+    OSM regularly carries the same forecourt as both a node and a way, or as
+    two nodes a few metres apart. Real data returned two Chevrons 1.1 km from
+    the San Diego rental return with identical scores, which is one station
+    presented as a choice between itself.
+    """
+    kept: list[Station] = []
+    for st in stations:
+        key = (st.brand or st.name).lower()
+        if any(
+            (k.brand or k.name).lower() == key
+            and haversine_km((k.lat, k.lon), (st.lat, st.lon)) * 1000 < metres
+            for k in kept
+        ):
+            continue
+        kept.append(st)
+    return kept
+
+
 def rank(
     stations: list[Station],
     origin: tuple[float, float],
@@ -220,7 +268,7 @@ def rank(
     avoid_lower = [a.lower() for a in (avoid or [])]
     out: list[Candidate] = []
 
-    for st in stations:
+    for st in dedupe([s for s in stations if s.sells_petrol]):
         blocked = next(
             (a for a in avoid_lower
              if a in st.osm_id.lower()
@@ -243,8 +291,13 @@ def rank(
             continue
 
         score = 100.0
-        score -= d_min * 10             # every minute off route hurts most
-        reasons = [f"{d_min:.0f} min off route"]
+        # Anything inside the free window is simply "on the way", and brand and
+        # hours decide. Past it, distance bites hard.
+        if d_min <= FREE_DETOUR_MINUTES:
+            reasons = ["on the way"]
+        else:
+            score -= (d_min - FREE_DETOUR_MINUTES) * 20
+            reasons = [f"{d_min:.0f} min off route"]
 
         if open_state is True:
             score += 25
@@ -255,6 +308,11 @@ def rank(
         if st.is_fast_brand:
             score += 15
             reasons.append("large brand, quick in and out")
+        if st.is_anonymous:
+            # No name and no brand means you cannot spot it from the road in
+            # the dark, which is the whole job here.
+            score -= 20
+            reasons.append("unnamed in OSM, hard to spot")
 
         # The maximum exists so the gauge still reads full at the counter:
         # fill up twenty miles out and it visibly is not. The minimum is a
