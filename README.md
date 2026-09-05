@@ -124,8 +124,26 @@ same habits, different airport.
 ```bash
 git clone https://github.com/YOURNAME/travel-departure-kit.git
 cd travel-departure-kit
+```
+
+**Windows.** After cloning:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+On Windows, `pip install -r requirements.txt` is not optional even though the
+kit has almost no dependencies: Windows ships no time zone database, and every
+calculation here is time zone arithmetic. Skip it and you get a config error
+naming a zone that is actually correct. `setup.ps1` installs the requirements,
+creates your profile from the example, and runs the tests.
+
+**macOS and Linux:**
+
+```bash
 pip install -r requirements.txt
 cp config/profile.example.yaml config/profile.yaml
+python -m pytest tests/ -q
 ```
 
 Then edit `config/profile.yaml`. The two numbers that matter most are
