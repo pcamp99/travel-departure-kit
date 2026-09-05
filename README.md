@@ -291,4 +291,6 @@ binding constraint when a checked bag was involved.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). Use it, change it, ship it. The one thing worth
+sending back is airport data: if you time a rental return the tool doesn't
+know about yet, a line in `config/airports.yaml` helps everyone.
