@@ -159,3 +159,18 @@ written. After that the scheduled runs refresh the token by themselves.
 If the token ever goes stale, the scheduled run fails quietly and your log
 says so. This is the argument for keeping `watch.log` rather than discarding
 the output.
+
+---
+
+## What the log contains
+
+Every example on this page redirects output to a log — `watch.log` on Windows,
+whatever path you chose in the launchd plist or the cron line on macOS and
+Linux. That log accumulates the contents of each run, and those contents are
+your trip: hotel addresses, flight numbers, confirmation codes, one entry per
+day for as long as the job runs.
+
+It is gitignored, so `git add -A` will not sweep it into a commit. That is a
+safety net rather than a reason to relax. If you would rather it not live in
+the repo at all, redirect it somewhere outside the checkout — any of the three
+examples above takes a different path without further changes.

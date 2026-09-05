@@ -4,6 +4,11 @@ credentials.json
 token.json
 *.token.json
 
+# Scheduler output. Contains hotel addresses, flight numbers and
+# confirmation codes, so it must never be committed.
+*.log
+watch.log
+
 # Python
 __pycache__/
 *.py[cod]
