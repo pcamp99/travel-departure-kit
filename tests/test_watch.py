@@ -167,6 +167,48 @@ def test_a_plan_for_a_different_flight_does_not_count():
     assert not already_planned(existing, flight)
 
 
+# --- plans written by hand, which carry no marker -------------------------------
+
+SAN_FLIGHT = Flight(datetime(2026, 10, 17, 7, tzinfo=PT), "SAN", "flight123", "AA 1651")
+
+
+def leave_for(code, start, description="Leave at 04:55"):
+    return event(f"Leave for {code} (fuel stop, then rental return)",
+                 start=start, description=description)
+
+
+def test_a_marked_plan_is_recognised_by_its_marker():
+    marked = leave_for("SAN", datetime(2026, 10, 17, 4, 55, tzinfo=PT),
+                       description=f"Leave at 04:55\n\n{plan_marker(SAN_FLIGHT)}")
+    assert already_planned([marked], SAN_FLIGHT)
+
+
+def test_a_hand_made_plan_before_this_flight_is_recognised():
+    # Written in Eastern time on purpose: the comparison must be on the
+    # instant, read in the airport's zone, not on the event's own label.
+    hand_made = leave_for("SAN", datetime(2026, 10, 17, 7, 55, tzinfo=ET))
+    assert already_planned([hand_made], SAN_FLIGHT)
+
+
+def test_a_hand_made_plan_the_day_before_does_not_count():
+    yesterday = leave_for("SAN", datetime(2026, 10, 16, 4, 55, tzinfo=PT))
+    assert not already_planned([yesterday], SAN_FLIGHT)
+
+
+def test_a_hand_made_plan_for_another_airport_the_same_morning_does_not_count():
+    elsewhere = leave_for("LAX", datetime(2026, 10, 17, 4, 55, tzinfo=PT))
+    assert not already_planned([elsewhere], SAN_FLIGHT)
+
+
+def test_a_marked_plan_for_another_flight_is_not_taken_as_hand_made():
+    # Two departures from one airport inside the window: the first flight's
+    # plan carries its own marker and must not suppress the second's.
+    other = Flight(datetime(2026, 10, 17, 5, tzinfo=PT), "SAN", "flight999", "AA 871")
+    theirs = leave_for("SAN", datetime(2026, 10, 17, 2, 55, tzinfo=PT),
+                       description=plan_marker(other))
+    assert not already_planned([theirs], SAN_FLIGHT)
+
+
 # --- only when it is time -------------------------------------------------------
 
 def test_a_flight_inside_the_lead_window_is_actionable():

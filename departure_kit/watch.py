@@ -26,6 +26,7 @@ produces a duplicate reminder every morning until the flight.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -50,6 +51,13 @@ LODGING_WORDS = (
 # Written into the description of every plan this creates, so a later run can
 # recognise its own work.
 MARKER = "tdk-plan-for:"
+
+# How far before a departure a hand made plan's start may fall and still be
+# taken as the plan for that flight. Wide enough for any real leave time,
+# narrow enough that yesterday's plan for the same airport does not count.
+HAND_MADE_WINDOW = timedelta(hours=12)
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -194,14 +202,63 @@ def plan_marker(flight: Flight) -> str:
     return f"{MARKER} {flight.event_id}"
 
 
-def already_planned(events, flight: Flight) -> bool:
-    """Has a previous run already written a plan for this flight?
+def hand_made_plan(events, flight: Flight) -> dict | None:
+    """A plan written by running plan_departure.py by hand, if there is one.
 
-    Keyed on the flight's event id rather than on a date, so moving the
-    reminder or rescheduling the day does not produce a second copy.
+    Those carry no marker and no flight number, only the title
+    plan_departure.py gives every plan and a start shortly before the flight.
+    So the match is on that title for this airport, starting within the
+    HAND_MADE_WINDOW before departure. An event that carries a marker is
+    skipped here: it belongs to a specific flight, and the marker check has
+    already decided whether that flight is this one.
+    """
+    title = re.compile(rf"^Leave for {re.escape(flight.airport)}\b")
+    earliest = flight.departure - HAND_MADE_WINDOW
+    for event in events:
+        if MARKER in (event.get("description") or ""):
+            continue
+        if not title.match(event.get("summary") or ""):
+            continue
+        iso = (event.get("start") or {}).get("dateTime")
+        if not iso:
+            continue
+        try:
+            start = datetime.fromisoformat(iso)
+        except ValueError:
+            continue
+        # Same rule as find_flights: trust the instant, read it in the
+        # airport's zone, and assume that zone if the event gave none.
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=flight.departure.tzinfo)
+        else:
+            start = start.astimezone(flight.departure.tzinfo)
+        if earliest <= start < flight.departure:
+            return event
+    return None
+
+
+def already_planned(events, flight: Flight) -> bool:
+    """Has a plan for this flight already been written, by a run or by hand?
+
+    The marker is checked first and keyed on the flight's event id rather
+    than on a date, so moving the reminder or rescheduling the day does not
+    produce a second copy. Without a marker, a hand made plan for the same
+    airport just before the flight counts too, because otherwise anyone who
+    planned a trip themselves gets a duplicate reminder from the watcher.
     """
     needle = plan_marker(flight)
-    return any(needle in (e.get("description") or "") for e in events)
+    if any(needle in (e.get("description") or "") for e in events):
+        return True
+    found = hand_made_plan(events, flight)
+    if found is not None:
+        # Warning rather than info so it reaches the scheduler's log without
+        # any logging setup: this match is a heuristic, and if it is ever
+        # wrong the user needs to be able to see why nothing was written.
+        logger.warning("existing hand made plan found for %s: %r at %s",
+                       flight.airport, found.get("summary"),
+                       (found.get("start") or {}).get("dateTime"))
+        return True
+    return False
 
 
 def next_actionable(flight: Flight, now: datetime, lead_hours: int) -> bool:
